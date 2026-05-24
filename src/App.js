@@ -21,6 +21,7 @@ function App() {
   const [currentIndex, setCurrentIndex] = useState(null);
 
   const [runEnabled, setRunEnabled] = useState(true);
+  const [previewVersion, setPreviewVersion] = useState(0);
   const [statusMsg, setStatusMsg] = useState("");
 
   const [appBg, setAppBg] = useState("#020617");
@@ -30,28 +31,37 @@ function App() {
   const [accent, setAccent] = useState("#38bdf8");
   const [previewBg, setPreviewBg] = useState("#ffffff");
 
+  const flashStatus = (msg, delay = 1200) => {
+    setStatusMsg(msg);
+    window.setTimeout(() => setStatusMsg(""), delay);
+  };
+
   useEffect(() => {
-    const savedProjects = JSON.parse(localStorage.getItem("codesnip_projects")) || [];
-    const savedTheme = JSON.parse(localStorage.getItem("codesnip_theme")) || null;
-    const savedCurrent = JSON.parse(localStorage.getItem("codesnip_current")) || null;
+    try {
+      const savedProjects = JSON.parse(localStorage.getItem("codesnip_projects")) || [];
+      const savedTheme = JSON.parse(localStorage.getItem("codesnip_theme")) || null;
+      const savedCurrent = JSON.parse(localStorage.getItem("codesnip_current")) || null;
 
-    setProjects(savedProjects);
+      setProjects(Array.isArray(savedProjects) ? savedProjects : []);
 
-    if (savedCurrent) {
-      setProjectName(savedCurrent.projectName ?? defaultProject.projectName);
-      setCodeMap(savedCurrent.codeMap ?? defaultProject.codeMap);
-      setCurrentIndex(
-        typeof savedCurrent.currentIndex === "number" ? savedCurrent.currentIndex : null
-      );
-    }
+      if (savedCurrent) {
+        setProjectName(savedCurrent.projectName ?? defaultProject.projectName);
+        setCodeMap(savedCurrent.codeMap ?? defaultProject.codeMap);
+        setCurrentIndex(
+          typeof savedCurrent.currentIndex === "number" ? savedCurrent.currentIndex : null
+        );
+      }
 
-    if (savedTheme) {
-      setAppBg(savedTheme.appBg || "#020617");
-      setPanelBg(savedTheme.panelBg || "#0b1220");
-      setEditorBg(savedTheme.editorBg || "#020617");
-      setEditorText(savedTheme.editorText || "#e2e8f0");
-      setAccent(savedTheme.accent || "#38bdf8");
-      setPreviewBg(savedTheme.previewBg || "#ffffff");
+      if (savedTheme) {
+        setAppBg(savedTheme.appBg || "#020617");
+        setPanelBg(savedTheme.panelBg || "#0b1220");
+        setEditorBg(savedTheme.editorBg || "#020617");
+        setEditorText(savedTheme.editorText || "#e2e8f0");
+        setAccent(savedTheme.accent || "#38bdf8");
+        setPreviewBg(savedTheme.previewBg || "#ffffff");
+      }
+    } catch {
+      setProjects([]);
     }
   }, []);
 
@@ -84,14 +94,17 @@ function App() {
     );
   }, [appBg, panelBg, editorBg, editorText, accent, previewBg]);
 
+  const safeJs = (codeMap.js || "").replace(/<\/script>/gi, "<\\/script>");
+
   const previewDoc = useMemo(() => {
     const htmlCode = codeMap.html || "";
     const cssCode = codeMap.css || "";
-    const jsCode = codeMap.js || "";
 
     return `
+      <!DOCTYPE html>
       <html>
         <head>
+          <meta charset="UTF-8" />
           <style>
             ${cssCode}
             body {
@@ -106,8 +119,16 @@ function App() {
         <body>
           ${htmlCode}
           <script>
+            window.onerror = function (msg) {
+              document.body.insertAdjacentHTML(
+                "beforeend",
+                "<pre style='color:red;white-space:pre-wrap;padding:12px;background:#fee2e2;border-radius:12px;'>" +
+                  msg +
+                  "</pre>"
+              );
+            };
             try {
-              ${jsCode}
+              ${safeJs}
             } catch (e) {
               document.body.insertAdjacentHTML(
                 "beforeend",
@@ -116,11 +137,11 @@ function App() {
                   "</pre>"
               );
             }
-          <\/script>
+          <\\/script>
         </body>
       </html>
     `;
-  }, [codeMap, previewBg]);
+  }, [codeMap.html, codeMap.css, safeJs, previewBg]);
 
   const newProject = () => {
     const next = {
@@ -134,8 +155,8 @@ function App() {
     setProjectName(next.projectName);
     setCodeMap(next.codeMap);
     setRunEnabled(true);
-    setStatusMsg("New project created");
-    setTimeout(() => setStatusMsg(""), 1200);
+    setPreviewVersion((v) => v + 1);
+    flashStatus("New project created");
   };
 
   const loadProject = (index) => {
@@ -146,8 +167,8 @@ function App() {
     setProjectName(p.projectName ?? `Project ${index + 1}`);
     setCodeMap(p.codeMap ?? defaultProject.codeMap);
     setRunEnabled(true);
-    setStatusMsg(`Loaded ${p.projectName ?? `Project ${index + 1}`}`);
-    setTimeout(() => setStatusMsg(""), 1200);
+    setPreviewVersion((v) => v + 1);
+    flashStatus(`Loaded ${p.projectName ?? `Project ${index + 1}`}`);
   };
 
   const saveProject = () => {
@@ -166,14 +187,14 @@ function App() {
     }
 
     setProjects(updated);
-    setStatusMsg("Saved");
-    setTimeout(() => setStatusMsg(""), 1200);
+    flashStatus("Saved");
   };
 
   const clearCode = () => {
     setCodeMap({ html: "", css: "", js: "" });
-    setStatusMsg("Code cleared");
-    setTimeout(() => setStatusMsg(""), 1200);
+    setRunEnabled(true);
+    setPreviewVersion((v) => v + 1);
+    flashStatus("Code cleared");
   };
 
   const copyCode = async () => {
@@ -181,6 +202,7 @@ function App() {
       const bundle = `<!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8" />
 <style>
 ${codeMap.css || ""}
 </style>
@@ -188,16 +210,15 @@ ${codeMap.css || ""}
 <body>
 ${codeMap.html || ""}
 <script>
-${codeMap.js || ""}
-</script>
+${safeJs}
+<\/script>
 </body>
 </html>`;
+
       await navigator.clipboard.writeText(bundle);
-      setStatusMsg("Copied");
-      setTimeout(() => setStatusMsg(""), 1000);
+      flashStatus("Copied", 1000);
     } catch {
-      setStatusMsg("Copy failed");
-      setTimeout(() => setStatusMsg(""), 1200);
+      flashStatus("Copy failed");
     }
   };
 
@@ -205,6 +226,7 @@ ${codeMap.js || ""}
     const bundle = `<!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8" />
 <style>
 ${codeMap.css || ""}
 </style>
@@ -212,27 +234,35 @@ ${codeMap.css || ""}
 <body>
 ${codeMap.html || ""}
 <script>
-${codeMap.js || ""}
-</script>
+${safeJs}
+<\/script>
 </body>
 </html>`;
 
     const blob = new Blob([bundle], { type: "text/html;charset=utf-8" });
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
+
+    a.href = url;
     a.download = `${projectName || "project"}.html`;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(a.href);
+    a.remove();
+
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    flashStatus("Downloaded", 1000);
   };
 
   const clearOutput = () => {
     setRunEnabled(false);
-    setStatusMsg("Preview cleared");
-    setTimeout(() => setStatusMsg(""), 1000);
+    setPreviewVersion((v) => v + 1);
+    flashStatus("Preview cleared", 1000);
   };
 
   const handleGo = () => {
     setRunEnabled(true);
+    setPreviewVersion((v) => v + 1);
+    flashStatus("Preview running", 1000);
   };
 
   const themeVars = {
@@ -423,10 +453,10 @@ ${codeMap.js || ""}
             <div className="previewWrap" style={{ background: previewBg }}>
               {runEnabled ? (
                 <iframe
-                  key={`${projectName}-${runEnabled}-${previewBg}`}
+                  key={`${previewVersion}-${previewBg}`}
                   srcDoc={previewDoc}
                   title="preview"
-                  sandbox="allow-scripts"
+                  sandbox="allow-scripts allow-same-origin"
                   style={{ background: previewBg }}
                 />
               ) : (

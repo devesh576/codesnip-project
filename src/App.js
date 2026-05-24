@@ -402,9 +402,7 @@ ${safeJs}
                     value={codeMap.html}
                     height="100%"
                     extensions={[htmlLang()]}
-                    onChange={(value) =>
-                      setCodeMap((prev) => ({ ...prev, html: value }))
-                    }
+                    onChange={(value) => setCodeMap((prev) => ({ ...prev, html: value }))}
                     theme="dark"
                   />
                 </div>
@@ -417,9 +415,7 @@ ${safeJs}
                     value={codeMap.css}
                     height="100%"
                     extensions={[cssLang()]}
-                    onChange={(value) =>
-                      setCodeMap((prev) => ({ ...prev, css: value }))
-                    }
+                    onChange={(value) => setCodeMap((prev) => ({ ...prev, css: value }))}
                     theme="dark"
                   />
                 </div>
@@ -432,9 +428,7 @@ ${safeJs}
                     value={codeMap.js}
                     height="100%"
                     extensions={[jsLang()]}
-                    onChange={(value) =>
-                      setCodeMap((prev) => ({ ...prev, js: value }))
-                    }
+                    onChange={(value) => setCodeMap((prev) => ({ ...prev, js: value }))}
                     theme="dark"
                   />
                 </div>

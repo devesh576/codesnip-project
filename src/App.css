@@ -3,6 +3,13 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+}
+
 :root {
   --glass: rgba(15, 23, 42, 0.72);
   --glass-strong: rgba(2, 6, 23, 0.88);
@@ -42,7 +49,8 @@ button:active {
 
 /* APP LAYOUT */
 .app {
-  min-height: 100vh;
+  width: 100%;
+  min-height: 100%;
   display: flex;
   background:
     radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.08), transparent 30%),
@@ -87,6 +95,8 @@ button:active {
   padding: 8px 12px;
   cursor: pointer;
   box-shadow: 0 10px 25px rgba(56, 189, 248, 0.22);
+  position: relative;
+  overflow: hidden;
 }
 
 .newBtn:hover {
@@ -451,23 +461,27 @@ button:active {
 }
 
 /* CODEMIRROR */
-.editorShell {
+.editorShell,
+.cm-editor {
   flex: 1;
   min-height: 0;
   background: var(--editor-bg);
 }
 
-.editorShell .cm-editor {
+.editorShell .cm-editor,
+.cm-editor {
   height: 100%;
   background: var(--editor-bg) !important;
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
-.editorShell .cm-editor:focus-within {
+.editorShell .cm-editor:focus-within,
+.cm-editor:focus-within {
   box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.22), 0 0 20px rgba(56, 189, 248, 0.18);
 }
 
-.editorShell .cm-scroller {
+.editorShell .cm-scroller,
+.cm-scroller {
   font-family: Consolas, Monaco, monospace;
   background: var(--editor-bg) !important;
 }
@@ -475,27 +489,39 @@ button:active {
 .editorShell .cm-content,
 .editorShell .cm-gutters,
 .editorShell .cm-activeLine,
-.editorShell .cm-activeLineGutter {
+.editorShell .cm-activeLineGutter,
+.cm-content,
+.cm-gutters,
+.cm-activeLine,
+.cm-activeLineGutter {
   background: var(--editor-bg) !important;
 }
 
 .editorShell .cm-content,
 .editorShell .cm-line,
-.editorShell .cm-gutters {
+.editorShell .cm-gutters,
+.cm-content,
+.cm-line,
+.cm-gutters {
   color: var(--editor-fg) !important;
 }
 
-.editorShell .cm-gutters {
+.editorShell .cm-gutters,
+.cm-gutters {
   border-right: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .editorShell .cm-cursor,
-.editorShell .cm-dropCursor {
+.editorShell .cm-dropCursor,
+.cm-cursor,
+.cm-dropCursor {
   border-left-color: var(--accent) !important;
 }
 
 .editorShell .cm-selectionBackground,
-.editorShell .cm-content ::selection {
+.editorShell .cm-content ::selection,
+.cm-selectionBackground,
+.cm-content ::selection {
   background: rgba(56, 189, 248, 0.28) !important;
 }
 
@@ -516,6 +542,7 @@ button:active {
   width: 100%;
   height: 100%;
   border: 0;
+  display: block;
   background: #ffffff;
   transition: transform 0.25s ease, filter 0.25s ease;
 }

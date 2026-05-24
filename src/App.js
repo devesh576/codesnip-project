@@ -3,100 +3,18 @@ import CodeMirror from "@uiw/react-codemirror";
 import { html as htmlLang } from "@codemirror/lang-html";
 import { css as cssLang } from "@codemirror/lang-css";
 import { javascript as jsLang } from "@codemirror/lang-javascript";
-import { json as jsonLang } from "@codemirror/lang-json";
-import { xml as xmlLang } from "@codemirror/lang-xml";
-import { yaml as yamlLang } from "@codemirror/lang-yaml";
-import { sql as sqlLang } from "@codemirror/lang-sql";
-import { python as pythonLang } from "@codemirror/lang-python";
-import { java as javaLang } from "@codemirror/lang-java";
-import { cpp as cppLang } from "@codemirror/lang-cpp";
-import { go as goLang } from "@codemirror/lang-go";
 import "./App.css";
 
 const defaultProject = {
   projectName: "My CodeSnip Project",
-  tab: "html",
   codeMap: {
     html: "<h1>Hello World</h1>\n<p>Write your code here...</p>",
     css: "body { font-family: Arial; padding: 24px; }\nh1 { color: #22c55e; }",
     js: "console.log('Hello CodeSnip');",
-    json: '{\n  "name": "CodeSnip"\n}',
-    xml: "<note>\n  <to>You</to>\n  <body>Hello</body>\n</note>",
-    yaml: "name: CodeSnip\ntype: editor",
-    sql: "SELECT * FROM users;",
-    python: "print('Python needs backend to execute')",
-    java: "class Main { public static void main(String[] args) { System.out.println(\"Java needs backend to execute\"); } }",
-    c: '#include <stdio.h>\nint main(){ printf("Hello C\\n"); return 0; }',
-    cpp: '#include <iostream>\nusing namespace std;\nint main(){ cout << "Hello C++" << endl; return 0; }',
-    go: 'package main\nimport "fmt"\nfunc main(){ fmt.Println("Hello Go") }',
-  },
-};
-
-const languageInfo = {
-  html: {
-    label: "HTML",
-    tip: "Use semantic tags and keep structure clean.",
-    runType: "web",
-  },
-  css: {
-    label: "CSS",
-    tip: "Use flexbox/grid and keep colors readable.",
-    runType: "web",
-  },
-  js: {
-    label: "JavaScript",
-    tip: "Use console.log for debugging and keep DOM selectors simple.",
-    runType: "web",
-  },
-  json: {
-    label: "JSON",
-    tip: "Perfect for configs and data. Keep keys in double quotes.",
-    runType: "editor",
-  },
-  xml: {
-    label: "XML",
-    tip: "Keep tags properly nested and close every element.",
-    runType: "editor",
-  },
-  yaml: {
-    label: "YAML",
-    tip: "Use spaces only. Avoid tabs.",
-    runType: "editor",
-  },
-  sql: {
-    label: "SQL",
-    tip: "Start with SELECT, then add WHERE and ORDER BY.",
-    runType: "editor",
-  },
-  python: {
-    label: "Python",
-    tip: "Indentation matters. Backend needed for real execution.",
-    runType: "editor",
-  },
-  java: {
-    label: "Java",
-    tip: "Class name and file name should match. Backend needed for execution.",
-    runType: "editor",
-  },
-  c: {
-    label: "C",
-    tip: "Use stdio.h for basic input/output. Backend needed for execution.",
-    runType: "editor",
-  },
-  cpp: {
-    label: "C++",
-    tip: "Use iostream and namespace std for quick programs. Backend needed for execution.",
-    runType: "editor",
-  },
-  go: {
-    label: "Go",
-    tip: "Keep the main function small and clear. Backend needed for execution.",
-    runType: "editor",
   },
 };
 
 function App() {
-  const [tab, setTab] = useState(defaultProject.tab);
   const [projectName, setProjectName] = useState(defaultProject.projectName);
   const [codeMap, setCodeMap] = useState(defaultProject.codeMap);
   const [projects, setProjects] = useState([]);
@@ -110,17 +28,17 @@ function App() {
   const [editorBg, setEditorBg] = useState("#020617");
   const [editorText, setEditorText] = useState("#e2e8f0");
   const [accent, setAccent] = useState("#38bdf8");
+  const [previewBg, setPreviewBg] = useState("#ffffff");
 
   useEffect(() => {
     const savedProjects = JSON.parse(localStorage.getItem("codesnip_projects")) || [];
     const savedTheme = JSON.parse(localStorage.getItem("codesnip_theme")) || null;
+    const savedCurrent = JSON.parse(localStorage.getItem("codesnip_current")) || null;
 
     setProjects(savedProjects);
 
-    const savedCurrent = JSON.parse(localStorage.getItem("codesnip_current")) || null;
     if (savedCurrent) {
       setProjectName(savedCurrent.projectName ?? defaultProject.projectName);
-      setTab(savedCurrent.tab ?? defaultProject.tab);
       setCodeMap(savedCurrent.codeMap ?? defaultProject.codeMap);
       setCurrentIndex(
         typeof savedCurrent.currentIndex === "number" ? savedCurrent.currentIndex : null
@@ -133,6 +51,7 @@ function App() {
       setEditorBg(savedTheme.editorBg || "#020617");
       setEditorText(savedTheme.editorText || "#e2e8f0");
       setAccent(savedTheme.accent || "#38bdf8");
+      setPreviewBg(savedTheme.previewBg || "#ffffff");
     }
   }, []);
 
@@ -145,77 +64,30 @@ function App() {
       "codesnip_current",
       JSON.stringify({
         projectName,
-        tab,
         codeMap,
         currentIndex,
       })
     );
-  }, [projectName, tab, codeMap, currentIndex]);
+  }, [projectName, codeMap, currentIndex]);
 
   useEffect(() => {
     localStorage.setItem(
       "codesnip_theme",
-      JSON.stringify({ appBg, panelBg, editorBg, editorText, accent })
+      JSON.stringify({
+        appBg,
+        panelBg,
+        editorBg,
+        editorText,
+        accent,
+        previewBg,
+      })
     );
-  }, [appBg, panelBg, editorBg, editorText, accent]);
+  }, [appBg, panelBg, editorBg, editorText, accent, previewBg]);
 
-  const activeCode = useMemo(() => codeMap[tab] || "", [tab, codeMap]);
-
-  const setActiveCode = (value) => {
-    setCodeMap((prev) => ({
-      ...prev,
-      [tab]: value,
-    }));
-  };
-
-  const getLang = () => {
-    if (tab === "html") return htmlLang();
-    if (tab === "css") return cssLang();
-    if (tab === "js") return jsLang();
-    if (tab === "json") return jsonLang();
-    if (tab === "xml") return xmlLang();
-    if (tab === "yaml") return yamlLang();
-    if (tab === "sql") return sqlLang();
-    if (tab === "python") return pythonLang();
-    if (tab === "java") return javaLang();
-    if (tab === "c" || tab === "cpp") return cppLang();
-    if (tab === "go") return goLang();
-    return jsLang();
-  };
-
-  const getFileExt = () => {
-    return tab;
-  };
-
-  const makePreview = () => {
-    if (!runEnabled) return "";
-
-    if (!["html", "css", "js"].includes(tab)) {
-      return `
-        <html>
-          <body style="margin:0;font-family:Segoe UI,Arial,sans-serif;background:#ffffff;color:#0f172a;padding:24px;">
-            <div style="max-width:860px;margin:auto;border:1px solid #cbd5e1;border-radius:18px;padding:24px;box-shadow:0 10px 30px rgba(15,23,42,.08);">
-              <h2 style="margin:0 0 10px;">${languageInfo[tab].label} Editor</h2>
-              <p style="line-height:1.7;margin:0 0 16px;">
-                This language is shown in the editor with syntax highlighting.
-                Real execution needs a backend compiler or API.
-              </p>
-              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:14px;margin-bottom:16px;">
-                <strong>Suggestion:</strong> ${languageInfo[tab].tip}
-              </div>
-              <pre style="margin:0;background:#0f172a;color:#e2e8f0;padding:16px;border-radius:14px;overflow:auto;white-space:pre-wrap;">${activeCode.replace(
-                /</g,
-                "&lt;"
-              )}</pre>
-            </div>
-          </body>
-        </html>
-      `;
-    }
-
-    const htmlCode = tab === "html" ? activeCode : "<div class='box'>Write your code here</div>";
-    const cssCode = tab === "css" ? activeCode : codeMap.css || "";
-    const jsCode = tab === "js" ? activeCode : codeMap.js || "";
+  const previewDoc = useMemo(() => {
+    const htmlCode = codeMap.html || "";
+    const cssCode = codeMap.css || "";
+    const jsCode = codeMap.js || "";
 
     return `
       <html>
@@ -224,16 +96,10 @@ function App() {
             ${cssCode}
             body {
               margin: 0;
-              background: #ffffff;
+              background: ${previewBg};
               color: #111827;
               font-family: Arial, sans-serif;
               padding: 20px;
-            }
-            .box {
-              border: 2px dashed #94a3b8;
-              border-radius: 16px;
-              padding: 24px;
-              background: #f8fafc;
             }
           </style>
         </head>
@@ -245,32 +111,27 @@ function App() {
             } catch (e) {
               document.body.insertAdjacentHTML(
                 "beforeend",
-                "<pre style='color:red;white-space:pre-wrap;padding:12px;background:#fee2e2;border-radius:12px;'>" + e.message + "</pre>"
+                "<pre style='color:red;white-space:pre-wrap;padding:12px;background:#fee2e2;border-radius:12px;'>" +
+                  e.message +
+                  "</pre>"
               );
             }
-          </script>
+          <\/script>
         </body>
       </html>
     `;
-  };
-
-  const previewDoc = useMemo(
-    makePreview,
-    [runEnabled, tab, codeMap, activeCode]
-  );
+  }, [codeMap, previewBg]);
 
   const newProject = () => {
     const next = {
       projectName: `Project ${projects.length + 1}`,
-      tab: "html",
-      codeMap: { ...defaultProject.codeMap, html: "", css: "", js: "", json: "", xml: "", yaml: "", sql: "", python: "", java: "", c: "", cpp: "", go: "" },
+      codeMap: { html: "", css: "", js: "" },
     };
 
     const updated = [...projects, next];
     setProjects(updated);
     setCurrentIndex(updated.length - 1);
     setProjectName(next.projectName);
-    setTab(next.tab);
     setCodeMap(next.codeMap);
     setRunEnabled(true);
     setStatusMsg("New project created");
@@ -283,7 +144,6 @@ function App() {
 
     setCurrentIndex(index);
     setProjectName(p.projectName ?? `Project ${index + 1}`);
-    setTab(p.tab ?? "html");
     setCodeMap(p.codeMap ?? defaultProject.codeMap);
     setRunEnabled(true);
     setStatusMsg(`Loaded ${p.projectName ?? `Project ${index + 1}`}`);
@@ -293,11 +153,10 @@ function App() {
   const saveProject = () => {
     const payload = {
       projectName,
-      tab,
       codeMap,
     };
 
-    let updated = [...projects];
+    const updated = [...projects];
 
     if (currentIndex === null) {
       updated.push(payload);
@@ -312,20 +171,28 @@ function App() {
   };
 
   const clearCode = () => {
-    setCodeMap((prev) => {
-      const next = { ...prev };
-      Object.keys(next).forEach((k) => {
-        next[k] = "";
-      });
-      return next;
-    });
+    setCodeMap({ html: "", css: "", js: "" });
     setStatusMsg("Code cleared");
     setTimeout(() => setStatusMsg(""), 1200);
   };
 
   const copyCode = async () => {
     try {
-      await navigator.clipboard.writeText(activeCode);
+      const bundle = `<!DOCTYPE html>
+<html>
+<head>
+<style>
+${codeMap.css || ""}
+</style>
+</head>
+<body>
+${codeMap.html || ""}
+<script>
+${codeMap.js || ""}
+</script>
+</body>
+</html>`;
+      await navigator.clipboard.writeText(bundle);
       setStatusMsg("Copied");
       setTimeout(() => setStatusMsg(""), 1000);
     } catch {
@@ -335,19 +202,37 @@ function App() {
   };
 
   const downloadCode = () => {
-    const ext = getFileExt();
-    const blob = new Blob([activeCode], { type: "text/plain;charset=utf-8" });
+    const bundle = `<!DOCTYPE html>
+<html>
+<head>
+<style>
+${codeMap.css || ""}
+</style>
+</head>
+<body>
+${codeMap.html || ""}
+<script>
+${codeMap.js || ""}
+</script>
+</body>
+</html>`;
+
+    const blob = new Blob([bundle], { type: "text/html;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `${projectName || "project"}.${ext}`;
+    a.download = `${projectName || "project"}.html`;
     a.click();
     URL.revokeObjectURL(a.href);
   };
 
   const clearOutput = () => {
     setRunEnabled(false);
-    setStatusMsg("Output cleared");
+    setStatusMsg("Preview cleared");
     setTimeout(() => setStatusMsg(""), 1000);
+  };
+
+  const handleGo = () => {
+    setRunEnabled(true);
   };
 
   const themeVars = {
@@ -358,7 +243,18 @@ function App() {
     "--accent": accent,
   };
 
-  const tabs = ["html", "css", "js", "json", "xml", "yaml", "sql", "python", "java", "c", "cpp", "go"];
+  const editorPaneStyle = {
+    flex: 1,
+    minWidth: 0,
+    display: "flex",
+    flexDirection: "column",
+    borderRight: "1px solid #1f2937",
+  };
+
+  const editorBodyStyle = {
+    flex: 1,
+    minHeight: 0,
+  };
 
   return (
     <div className="app" style={themeVars}>
@@ -427,56 +323,92 @@ function App() {
             </label>
             <label>
               Text
-              <input type="color" value={editorText} onChange={(e) => setEditorText(e.target.value)} />
+              <input
+                type="color"
+                value={editorText}
+                onChange={(e) => setEditorText(e.target.value)}
+              />
             </label>
             <label>
               Accent
               <input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} />
+            </label>
+            <label>
+              Preview BG
+              <input
+                type="color"
+                value={previewBg}
+                onChange={(e) => setPreviewBg(e.target.value)}
+              />
             </label>
           </div>
 
           <div className="statusMsg">{statusMsg || "Auto saved in browser"}</div>
         </section>
 
-        <nav className="tabs">
-          {tabs.map((key) => (
-            <button key={key} className={tab === key ? "active" : ""} onClick={() => setTab(key)}>
-              {key === "cpp" ? "C++" : key.toUpperCase()}
-            </button>
-          ))}
-        </nav>
-
         <div className="container">
           <section className="editorPanel">
             <div className="panelHeader">
               <div>
-                <span>{languageInfo[tab].label} Editor</span>
-                <p>Write your code here</p>
+                <span>CodeSnip Editor</span>
+                <p>HTML | CSS | JS</p>
               </div>
 
               <div className="miniControls">
-                <button onClick={() => setRunEnabled(true)} className="goBtn">
+                <button onClick={handleGo} className="goBtn">
                   Go
                 </button>
                 <button onClick={clearOutput} className="clearBtn">
-                  Clear Output
+                  Clear Preview
                 </button>
               </div>
             </div>
 
-            <div className="suggestionBar">
-              <strong>Suggestion:</strong> {languageInfo[tab].tip}
-            </div>
+            <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
+              <div style={editorPaneStyle}>
+                <div className="suggestionBar">HTML</div>
+                <div style={editorBodyStyle}>
+                  <CodeMirror
+                    value={codeMap.html}
+                    height="100%"
+                    extensions={[htmlLang()]}
+                    onChange={(value) =>
+                      setCodeMap((prev) => ({ ...prev, html: value }))
+                    }
+                    theme="dark"
+                  />
+                </div>
+              </div>
 
-            <div className="editorShell">
-              <CodeMirror
-                value={activeCode}
-                height="100%"
-                extensions={[getLang()]}
-                placeholder="Write your code here..."
-                onChange={(value) => setActiveCode(value)}
-                theme="dark"
-              />
+              <div style={editorPaneStyle}>
+                <div className="suggestionBar">CSS</div>
+                <div style={editorBodyStyle}>
+                  <CodeMirror
+                    value={codeMap.css}
+                    height="100%"
+                    extensions={[cssLang()]}
+                    onChange={(value) =>
+                      setCodeMap((prev) => ({ ...prev, css: value }))
+                    }
+                    theme="dark"
+                  />
+                </div>
+              </div>
+
+              <div style={{ ...editorPaneStyle, borderRight: "0" }}>
+                <div className="suggestionBar">JS</div>
+                <div style={editorBodyStyle}>
+                  <CodeMirror
+                    value={codeMap.js}
+                    height="100%"
+                    extensions={[jsLang()]}
+                    onChange={(value) =>
+                      setCodeMap((prev) => ({ ...prev, js: value }))
+                    }
+                    theme="dark"
+                  />
+                </div>
+              </div>
             </div>
           </section>
 
@@ -484,30 +416,23 @@ function App() {
             <div className="panelHeader">
               <div>
                 <span>Live Preview</span>
-                <p>{languageInfo[tab].runType === "web" ? "Runs in browser" : "Editor mode only"}</p>
+                <p>Runs in browser</p>
               </div>
             </div>
 
-            <div className="previewWrap">
-              {languageInfo[tab].runType === "editor" ? (
-                <div className="noticeBox">
-                  <h3>{languageInfo[tab].label} editor ready</h3>
-                  <p>
-                    {languageInfo[tab].tip}
-                  </p>
-                  <pre>{activeCode}</pre>
-                </div>
-              ) : runEnabled ? (
+            <div className="previewWrap" style={{ background: previewBg }}>
+              {runEnabled ? (
                 <iframe
-                  key={`${tab}-${projectName}-${runEnabled}`}
+                  key={`${projectName}-${runEnabled}-${previewBg}`}
                   srcDoc={previewDoc}
                   title="preview"
                   sandbox="allow-scripts"
+                  style={{ background: previewBg }}
                 />
               ) : (
                 <div className="emptyOutput">
                   <div>
-                    <h3>Output cleared</h3>
+                    <h3>Preview cleared</h3>
                     <p>Go दबाकर preview wapas chalao.</p>
                   </div>
                 </div>
